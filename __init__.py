@@ -14,7 +14,7 @@ from nekro_agent.core.core_utils import ConfigBase, ExtraField
 
 from nekro_agent.api.schemas import AgentCtx
 from nekro_agent.core import logger
-from nekro_agent.services.plugin.base import (
+from nekro_agent.api.plugin import (
     ConfigBase,
     ExtraField,
     NekroPlugin,

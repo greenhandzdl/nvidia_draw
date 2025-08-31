@@ -11,7 +11,6 @@ from pydantic import Field, validator
 
 from nekro_agent.core.core_utils import ConfigBase, ExtraField
 
-
 from nekro_agent.api.schemas import AgentCtx
 from nekro_agent.core import logger
 from nekro_agent.api.plugin import (
@@ -20,6 +19,8 @@ from nekro_agent.api.plugin import (
     NekroPlugin,
     SandboxMethodType,
 )
+
+import os
 
 # ----------------------------------------------------------------------
 # Plugin instance
@@ -193,9 +194,11 @@ async def nvidia_send_image(_ctx: AgentCtx, image_base64: str) -> Dict[str, str]
         A dictionary indicating success or error.
     """
     try:
-        # 假设 AgentCtx 提供了 send_image 方法
-        await _ctx.send_image(image=image_base64, mime_type="image/png")
+        sandbox_path = await _ctx.fs.mixed_forward_file(image_base64, file_name="nvidia_generation.png")
+        await _ctx.send_image(sandbox_path)
+        os.unlink(sandbox_path)
         return {"status": "success", "message": "Image sent successfully"}
+
     except Exception as e:
         logger.exception("Failed to send image")
         return {"status": "error", "message": f"Image sending failed: {str(e)}"}

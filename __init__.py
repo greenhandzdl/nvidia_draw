@@ -1,6 +1,18 @@
 """Nvidia Draw Plugin
 
-Provides functionality to generate images using Nvidia's Stable Diffusion API and send them to the user.
+基于 NVIDIA AI API 的图像生成插件，使用 Stable Diffusion 3 Medium 模型生成高质量图像。
+
+主要功能:
+- 图像生成：调用 NVIDIA API 生成图像
+- Base64 编码图片数据返回：便于后续处理和传输
+- 模型组管理：支持多API密钥切换
+
+关键特性:
+- 集成 NVIDIA Stable Diffusion 3 Medium 模型
+- 支持自定义提示词和图像比例
+- 可配置负向提示词、采样步数和CFG Scale参数
+- 支持模型组管理，可灵活切换API密钥
+- 自动生成随机种子确保图像多样性
 """
 
 import random
@@ -26,8 +38,8 @@ import os
 # Plugin instance
 # ----------------------------------------------------------------------
 plugin = NekroPlugin(
-    name="nvidia_draw",
-    module_name="nvidia_draw",
+    name="nvidia_sd_draw",
+    module_name="nvidia_sd_draw",
     description="适合于Nvidia供应SD模型的绘图插件。",
     version="0.1.0",
     author="greenhandzdl",

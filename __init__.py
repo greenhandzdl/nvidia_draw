@@ -9,6 +9,9 @@ from typing import Any, Dict, Literal, Optional, Union
 import httpx
 from pydantic import Field, validator
 
+from nekro_agent.core.core_utils import ConfigBase, ExtraField
+
+
 from nekro_agent.api.schemas import AgentCtx
 from nekro_agent.core import logger
 from nekro_agent.services.plugin.base import (
@@ -27,7 +30,7 @@ plugin = NekroPlugin(
     description="适合于Nvidia供应SD模型的绘图插件。",
     version="0.1.0",
     author="greenhandzdl",
-    url="https://github.com/greenhandzdl/nvidia_draw",
+    url="https://github.com/greenhandzdl/nvidia_sd_draw",
 )
 
 

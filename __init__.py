@@ -212,16 +212,16 @@ async def nvidia_generate_image(prompt: str) -> Union[str, Dict[str, str]]:
     name="生成并发送图像",
     description="使用 Nvidia Stable Diffusion 生成图像并发送给用户。",
 )
-async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> str:
+async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str,dict[str, str]]:
     """Generate an image from a prompt and send it to the user.
 
     Args:
         prompt: The textual description of the desired image.
 
     Returns:
-        str(success): The file path of the generated image.
-        str(error): The error message.
-
+        success: str: The file path of the generated image.
+        failure: dict[str, str]: A dictionary with keys "status" and "message" describing the error.
+        
     Examples:
         # Generate new image but **NOT** send to chat
         nvidia_draw("a illustration style cute orange cat napping on a sunny windowsill, watercolor painting style")
@@ -231,7 +231,7 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> str:
     if isinstance(gen_result, dict) and gen_result.get("status") == "error":
         error_msg: str = gen_result.get("message", "Unknown error")
         logger.error("Image generation error: %s", error_msg)
-        return "error"
+        return {"status": "error", "message": error_msg}
 
     image_base64: str = gen_result  # type: ignore
 

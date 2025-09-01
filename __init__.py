@@ -19,6 +19,7 @@
 - [nvidia_draw](./__init__.py#L184-L217): 主函数，整合图像生成和发送流程
 - [clean_up](./__init__.py#L222-L228): 清理插件使用的资源
 """
+import base64
 
 import random
 from typing import Any, Dict, Literal, Optional, Union
@@ -173,17 +174,17 @@ async def nvidia_generate_image(prompt: str) -> Union[bytes, Dict[str, str]]:
             # 检查 HTTP 状态码
             response.raise_for_status()
             data = response.json()
-            image_bytes: Optional[bytes] = data.get("image")
-            if not image_bytes:
+            image_str: Optional[str] = data.get("image")
+            if not image_str:
                 logger.error("Image generation failed: missing 'image' field in response")
                 return {
                     "status": "error",
                     "message": "Image generation failed: Invalid response - missing 'image' field",
                 }
-            
-            # 记录部分字节内容用于调试，避免日志过大
-            logger.debug("Image generation successful, size: %d bytes, first 100 bytes: %s", 
-                        len(image_bytes), image_bytes[:100] if image_bytes and len(image_bytes) > 100 else image_bytes)
+            logger.debug("Image generation successful, size: %d bytes", len(image_str))
+
+            image_bytes: bytes = base64.b64decode(image_str)
+
             return image_bytes
     except httpx.HTTPStatusError as e:
         logger.error("Image generation HTTP error: %s", e)

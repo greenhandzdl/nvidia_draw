@@ -221,7 +221,8 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
         prompt: The textual description of the desired image.
 
     Returns:
-        str: Generated image path
+        str: Generated image path.(Notice: This method returns a path to the generated image, not the image itself.)
+            For example: ``/app/uploads/64752fe03047c0202683456ebc35733a``
         dict[str, str]: Error message if generation fails.
 
     Examples:

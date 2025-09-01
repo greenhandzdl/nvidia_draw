@@ -222,7 +222,7 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
 
     Returns:
         str: Generated image path.(Notice: This method returns a path to the generated image, not the image itself.)
-            For example: ``/app/uploads/64752fe03047c0202683456ebc35733a``
+            For example:``/app/uploads/sd_generate.png``
         dict[str, str]: Error message if generation fails.
 
     Examples:
@@ -238,7 +238,7 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
 
     image_bytes: bytes = gen_result  # type: ignore
 
-    result_sandbox_file = await _ctx.fs.mixed_forward_file(image_bytes)
+    result_sandbox_file = await _ctx.fs.mixed_forward_file(image_bytes,"sd_generate.png")
     return result_sandbox_file
 
 

@@ -222,7 +222,8 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
 
     Returns:
         str: Generated image path.(Notice: This method returns a path to the generated image, not the image itself.)
-            For example:``/app/uploads/sd_generate.png``
+            For example:``/app/uploads/sd_generate.jpeg``
+            And you should use send_msg_file to send the image to the user.
         dict[str, str]: Error message if generation fails.
 
     Examples:
@@ -236,9 +237,9 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
         logger.error("Image generation error: %s", error_msg)
         return {"status": "error", "message": error_msg}
 
-    image_bytes: bytes = gen_result  # type: ignore
+    image_bytes: bytes = gen_result
 
-    result_sandbox_file = await _ctx.fs.mixed_forward_file(image_bytes,"sd_generate.png")
+    result_sandbox_file = await _ctx.fs.mixed_forward_file(image_bytes,"sd_generate.jpeg")
     return result_sandbox_file
 
 

@@ -237,6 +237,7 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
         logger.error("Image generation error: %s", error_msg)
         return {"status": "error", "message": error_msg}
 
+    logger.debug("gen_result type: %s", type(gen_result))
     image_bytes: bytes = gen_result
 
     result_sandbox_file = await _ctx.fs.mixed_forward_file(image_bytes,"sd_generate.jpeg")

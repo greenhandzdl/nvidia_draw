@@ -137,6 +137,9 @@ async def nvidia_generate_image(prompt: str) -> Union[str, Dict[str, str]]:
     Returns:
         On success, a Base64‑encoded PNG image string.
         On failure, a dictionary with keys "status" and "message" describing the error.
+
+    Raises:
+        Any exception raised by the httpx library.
     """
     # 拼接完整的调用 URL
     invoke_url: str = f"{config.invoke_url_base}{config.model}"
@@ -205,15 +208,15 @@ async def nvidia_send_image(_ctx: AgentCtx, image_base64: str) -> Dict[str, str]
     Returns:
         A dictionary indicating success or error.
     """
-    try:
-        sandbox_path = await _ctx.fs.mixed_forward_file(image_base64, file_name="nvidia_generation.png")
-        await _ctx.send_image(sandbox_path)
-        os.unlink(sandbox_path)
-        return {"status": "success", "message": "Image sent successfully"}
+    # try:
+    sandbox_path = await _ctx.fs.mixed_forward_file(image_base64, file_name="nvidia_generation.png")
+    await _ctx.send_image(sandbox_path)
+    os.unlink(sandbox_path)
+    return {"status": "success", "message": "Image sent successfully"}
 
-    except Exception as e:
-        logger.exception("Failed to send image")
-        return {"status": "error", "message": f"Image sending failed: {str(e)}"}
+    # except Exception as e:
+    #     logger.exception("Failed to send image")
+    #     return {"status": "error", "message": f"Image sending failed: {str(e)}"}
 
 
 # ----------------------------------------------------------------------

@@ -175,6 +175,7 @@ async def nvidia_generate_image(prompt: str) -> Union[str, Dict[str, str]]:
                     "status": "error",
                     "message": "Image generation failed: Invalid response - missing 'image' field",
                 }
+            logger.debug("Image generation successful:"+image_base64)
             return image_base64
     except httpx.HTTPStatusError as e:
         logger.error("Image generation HTTP error: %s", e)

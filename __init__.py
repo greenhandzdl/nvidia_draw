@@ -22,6 +22,7 @@
 
 import random
 from typing import Any, Dict, Literal, Optional, Union
+import base64
 
 import httpx
 from pydantic import Field, validator
@@ -133,7 +134,7 @@ config = plugin.get_config(NvidiaDrawConfig)
 # ----------------------------------------------------------------------
 # 辅助函数：图像生成
 # ----------------------------------------------------------------------
-async def nvidia_generate_image(prompt: str) -> Union[str, Dict[str, str]]:
+async def nvidia_generate_image(prompt: str) -> Union[bytes, Dict[str, str]]:
     """Generate an image using Nvidia's Stable Diffusion API.
 
     Args:
@@ -173,14 +174,15 @@ async def nvidia_generate_image(prompt: str) -> Union[str, Dict[str, str]]:
             # 检查 HTTP 状态码
             response.raise_for_status()
             data = response.json()
-            image_base64: Optional[str] = data.get("image")
+            image_base64: bytes = data.get("image")
             if not image_base64:
                 logger.error("Image generation failed: missing 'image' field in response")
                 return {
                     "status": "error",
                     "message": "Image generation failed: Invalid response - missing 'image' field",
                 }
-            logger.debug("Image generation successful:"+image_base64)
+            # 将Base64字符串解码为bytes
+            logger.debug("Image generation successful, size: %d bytes", len(image_base64))
             return image_base64
     except httpx.HTTPStatusError as e:
         logger.error("Image generation HTTP error: %s", e)
@@ -202,8 +204,6 @@ async def nvidia_generate_image(prompt: str) -> Union[str, Dict[str, str]]:
         }
 
 
-
-
 # ----------------------------------------------------------------------
 # 主方法：生成并发送图像
 # ----------------------------------------------------------------------
@@ -212,7 +212,7 @@ async def nvidia_generate_image(prompt: str) -> Union[str, Dict[str, str]]:
     name="生成并发送图像",
     description="使用 Nvidia Stable Diffusion 生成图像并发送给用户。",
 )
-async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str,dict[str, str]]:
+async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]:
     """Generate an image from a prompt and send it to the user.
 
     Args:
@@ -221,7 +221,7 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str,dict[str, str]]:
     Returns:
         success: str: The file path of the generated image.
         failure: dict[str, str]: A dictionary with keys "status" and "message" describing the error.
-        
+
     Examples:
         # Generate new image but **NOT** send to chat
         nvidia_draw("a illustration style cute orange cat napping on a sunny windowsill, watercolor painting style")
@@ -233,9 +233,9 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str,dict[str, str]]:
         logger.error("Image generation error: %s", error_msg)
         return {"status": "error", "message": error_msg}
 
-    image_base64: str = gen_result  # type: ignore
+    image_bytes: bytes = gen_result  # type: ignore
 
-    result_sandbox_file = await _ctx.fs.mixed_forward_file(image_base64)
+    result_sandbox_file = await _ctx.fs.mixed_forward_file(image_bytes)
     return result_sandbox_file
 
 

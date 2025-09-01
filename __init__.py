@@ -197,27 +197,6 @@ async def nvidia_generate_image(prompt: str) -> Union[str, Dict[str, str]]:
         }
 
 
-# ----------------------------------------------------------------------
-# 辅助函数：发送图像
-# ----------------------------------------------------------------------
-async def nvidia_send_image(_ctx: AgentCtx, image_base64: str) -> Dict[str, str]:
-    """Send a Base64‑encoded PNG image to the user via the Agent context.
-
-    Args:
-        image_base64: Base64‑encoded PNG image data.
-
-    Returns:
-        A dictionary indicating success or error.
-    """
-    # try:
-    sandbox_path = await _ctx.fs.mixed_forward_file(image_base64, file_name="nvidia_generation.png")
-    await _ctx.send_image(sandbox_path)
-    os.unlink(sandbox_path)
-    return {"status": "success", "message": "Image sent successfully"}
-
-    # except Exception as e:
-    #     logger.exception("Failed to send image")
-    #     return {"status": "error", "message": f"Image sending failed: {str(e)}"}
 
 
 # ----------------------------------------------------------------------
@@ -228,14 +207,18 @@ async def nvidia_send_image(_ctx: AgentCtx, image_base64: str) -> Dict[str, str]
     name="生成并发送图像",
     description="使用 Nvidia Stable Diffusion 生成图像并发送给用户。",
 )
-async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Dict[str, str]:
+async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> str:
     """Generate an image from a prompt and send it to the user.
 
     Args:
         prompt: The textual description of the desired image.
 
     Returns:
-        A JSON‑serialisable dictionary indicating success or error.
+        str: Generated image path
+
+    Examples:
+        # Generate new image but **NOT** send to chat
+        nvidia_draw("a illustration style cute orange cat napping on a sunny windowsill, watercolor painting style")
     """
     # 生成图像
     gen_result = await nvidia_generate_image(prompt)
@@ -246,14 +229,8 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Dict[str, str]:
 
     image_base64: str = gen_result  # type: ignore
 
-    # 发送图像
-    send_result: Dict[str, str] = await nvidia_send_image(_ctx, image_base64)
-    if send_result.get("status") == "success":
-        return {"status": "success", "message": "Image generated and sent successfully"}
-    else:
-        error_msg = send_result.get("message", "Unknown error")
-        logger.error("Image sending error: %s", error_msg)
-        return {"status": "error", "message": error_msg}
+    result_sandbox_file = await _ctx.fs.mixed_forward_file(image_base64)
+    return result_sandbox_file
 
 
 # ----------------------------------------------------------------------

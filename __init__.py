@@ -221,7 +221,7 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
         prompt: The textual description of the desired image.
 
     Returns:
-        success: bytes: The Base64-encoded PNG image data.
+        success: str: The path to the generated image.
         failure: dict[str, str]: A dictionary with keys "status" and "message" describing the error.
 
     Examples:

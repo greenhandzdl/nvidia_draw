@@ -47,7 +47,7 @@ plugin = NekroPlugin(
     name="nvidia_sd_draw",
     module_name="nvidia_sd_draw",
     description="适合于Nvidia供应SD模型的绘图插件。",
-    version="0.1.2",
+    version="0.1.3",
     author="greenhandzdl",
     url="https://github.com/greenhandzdl/nvidia_sd_draw",
 )
@@ -184,7 +184,7 @@ async def nvidia_generate_image(prompt: str) -> Union[bytes, Dict[str, str]]:
                 }
             logger.debug("Image generation successful, size: %d bytes", len(image_str))
 
-            image_bytes: bytes = base64.b64decode(image_str)
+            image_bytes: bytes = bytes(image_str, encoding="utf-8")
 
             return image_bytes
     except httpx.HTTPStatusError as e:

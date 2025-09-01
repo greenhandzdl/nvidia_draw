@@ -9,10 +9,10 @@
 
 本插件提供基于 NVIDIA AI API 的图像生成功能，通过调用 Stability AI 的 Stable Diffusion 3 Medium 接口生成图像，并返回 Base64 编码的图片数据，供后续对话或多模态处理使用。
 
-插件包含三个主要函数：
-- [nvidia_generate_image](./nvidia_stable_diffusion.py#L225-L291)：生成图像并返回Base64编码数据
-- [nvidia_send_image](./nvidia_stable_diffusion.py#L292-L310)：发送图像数据
-- [nvidia_draw](./nvidia_stable_diffusion.py#L311-L340)：主函数，整合图像生成和发送流程
+插件包含的主要函数：
+- [nvidia_generate_image](./__init__.py#L112-L180): 生成图像并返回Base64编码数据
+- [nvidia_draw](./__init__.py#L184-L217): 主函数，整合图像生成和发送流程
+- [clean_up](./__init__.py#L222-L228): 清理插件使用的资源
 
 主要特性：
 - 集成 NVIDIA Stable Diffusion 3 Medium 模型
@@ -42,54 +42,49 @@
 
 ### 基本用法
 
-该插件作为一个Python模块，提供三个主要函数：
+该插件作为一个Python模块，提供主要函数：
 
 #### nvidia_draw (主函数)
 
 ```python
-from nvidia_stable_diffusion import nvidia_draw
+from nvidia_sd_draw import nvidia_draw
 
 # 生成并发送图像
 result = await nvidia_draw(
-    prompt="一只在星空下奔跑的猫",
-    aspect_ratio="16:9",
-    _ctx=ctx  # Agent上下文
+    _ctx=ctx,  # Agent上下文
+    prompt="一只在星空下奔跑的猫"
 )
 
 # 处理结果
-if result["status"] == "success":
+if result != "error":
     # 图像生成并发送成功
-    print(result["message"])
+    print("图像已生成并发送")
 else:
     # 处理错误
-    print(f"错误: {result['message']}")
+    print("图像生成失败")
 ```
 
 #### nvidia_generate_image (仅生成图像)
 
 ```python
-from nvidia_stable_diffusion import nvidia_generate_image
+from nvidia_sd_draw import nvidia_generate_image
 
 # 生成图像
-result = await nvidia_generate_image(
-    prompt="一只在星空下奔跑的猫",
-    aspect_ratio="16:9",
-    _ctx=ctx  # Agent上下文
-)
+result = await nvidia_generate_image("一只在星空下奔跑的猫")
 
 # 处理结果
-if "image_base64" in result:
-    image_data = result["image_base64"]
+if isinstance(result, str):
+    image_data = result  # Base64编码的图像数据
     # 处理图像数据
 else:
-    error_msg = result["error"]
+    error_msg = result.get("message", "未知错误")
     # 处理错误
 ```
 
 #### nvidia_send_image (仅发送图像)
 
-```python
-from nvidia_stable_diffusion import nvidia_send_image
+``python
+from nvidia_sd_draw import nvidia_send_image
 
 # 发送图像数据
 result = await nvidia_send_image(image_base64_data, _ctx=ctx)
@@ -131,13 +126,12 @@ else:
 主函数，整合图像生成和发送流程。
 
 参数：
-- `prompt` (str): 正向提示词，描述希望生成的图像内容
-- `aspect_ratio` (str): 目标宽高比，例如"16:9"、"1:1"
 - `_ctx` (AgentCtx): Agent上下文
+- `prompt` (str): 正向提示词，描述希望生成的图像内容
 
 返回值：
-- 成功时返回 `{"status": "success", "message": "Image generated and sent successfully"}`
-- 失败时返回 `{"status": "error", "message": "<错误描述>"}`
+- 成功时返回文件路径
+- 失败时返回 "error"
 
 ### nvidia_generate_image
 
@@ -145,24 +139,14 @@ else:
 
 参数：
 - `prompt` (str): 正向提示词，描述希望生成的图像内容
-- `aspect_ratio` (str): 目标宽高比，例如"16:9"、"1:1"
-- `_ctx` (AgentCtx): Agent上下文
 
 返回值：
-- 成功时返回 `{"image_base64": "<base64_string>"}`
-- 失败时返回 `{"error": "<错误描述>"}`
+- 成功时返回Base64编码的图像数据字符串
+- 失败时返回包含错误信息的字典
 
-### nvidia_send_image
+### clean_up
 
-发送Base64编码的图像数据。
-
-参数：
-- `image` (str): Base64编码的图像数据
-- `_ctx` (AgentCtx): Agent上下文
-
-返回值：
-- 成功时返回 `{"status": "success", "message": "Image sent successfully"}`
-- 失败时返回 `{"status": "error", "message": "Image sending failed: <错误描述>"}`
+清理插件使用的资源。
 
 ## 许可证
 

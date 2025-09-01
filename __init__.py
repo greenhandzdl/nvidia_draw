@@ -13,6 +13,11 @@
 - 可配置负向提示词、采样步数和CFG Scale参数
 - 支持模型组管理，可灵活切换API密钥
 - 自动生成随机种子确保图像多样性
+
+插件包含的主要函数:
+- [nvidia_generate_image](./__init__.py#L112-L180): 生成图像并返回Base64编码数据
+- [nvidia_draw](./__init__.py#L184-L217): 主函数，整合图像生成和发送流程
+- [clean_up](./__init__.py#L222-L228): 清理插件使用的资源
 """
 
 import random
@@ -41,7 +46,7 @@ plugin = NekroPlugin(
     name="nvidia_sd_draw",
     module_name="nvidia_sd_draw",
     description="适合于Nvidia供应SD模型的绘图插件。",
-    version="0.1.0",
+    version="0.1.1",
     author="greenhandzdl",
     url="https://github.com/greenhandzdl/nvidia_sd_draw",
 )
@@ -214,7 +219,8 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> str:
         prompt: The textual description of the desired image.
 
     Returns:
-        str: Generated image path
+        str(success): The file path of the generated image.
+        str(error): The error message.
 
     Examples:
         # Generate new image but **NOT** send to chat
@@ -225,7 +231,7 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> str:
     if isinstance(gen_result, dict) and gen_result.get("status") == "error":
         error_msg: str = gen_result.get("message", "Unknown error")
         logger.error("Image generation error: %s", error_msg)
-        return {"status": "error", "message": error_msg}
+        return "error"
 
     image_base64: str = gen_result  # type: ignore
 

@@ -227,8 +227,17 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
         dict[str, str]: Error message if generation fails.
 
     Examples:
+        prompt = "a illustration style cute orange cat napping on a sunny windowsill, watercolor painting style"
+
+        # You should use send_msg_file to send the image to the user.
+        # Generate new image and send to chat
+        image_path = nvidia_draw(prompt)
+        send_msg_file(_ck, image_path)
+
+        # Avoid Not Send Generated Image to chat
         # Generate new image but **NOT** send to chat
-        nvidia_draw("a illustration style cute orange cat napping on a sunny windowsill, watercolor painting style")
+        nvidia_draw(prompt)
+
     """
     # 生成图像
     gen_result = await nvidia_generate_image(prompt)

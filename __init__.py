@@ -8,7 +8,7 @@
 - 模型组管理：支持多API密钥切换
 
 关键特性:
-- 集成 NVIDIA Stable Diffusion 3 Medium 模型
+- 集成 NVIDIA Stable Diffusion 3 Medium 多种模型
 - 支持自定义提示词和图像比例
 - 可配置负向提示词、采样步数和CFG Scale参数
 - 支持模型组管理，可灵活切换API密钥
@@ -25,7 +25,7 @@ import random
 from typing import Any, Dict, Literal, Optional, Union
 
 import httpx
-from pydantic import Field, validator
+from pydantic import Field
 
 from nekro_agent.core.core_utils import ConfigBase, ExtraField
 
@@ -41,13 +41,19 @@ from nekro_agent.api.plugin import (
 import os
 
 # ----------------------------------------------------------------------
+# Plugin constants
+# ----------------------------------------------------------------------
+ABS_COMPARE: float = 0.5  # 用于比较浮点数是否接近0的阈值
+
+
+# ----------------------------------------------------------------------
 # Plugin instance
 # ----------------------------------------------------------------------
 plugin = NekroPlugin(
-    name="nvidia_sd_draw",
-    module_name="nvidia_sd_draw",
-    description="适合于Nvidia供应SD模型的绘图插件。",
-    version="0.1.4",
+    name="nvidia_draw",
+    module_name="nvidia_draw",
+    description="适合于Nvidia供应的绘图插件。",
+    version="0.2.0",
     author="greenhandzdl",
     url="https://github.com/greenhandzdl/nvidia_sd_draw",
 )
@@ -73,34 +79,64 @@ class NvidiaDrawConfig(ConfigBase):
         title="模型名称",
         description="要使用的生成模型。",
     )
+    mode: str = Field(
+        default="remove",
+        title="模型通道",
+        description="在提交参数(mode)时，若为remove，则将此参数移除。",
+    )
+    is_reference_diagram: bool = Field(
+        default=False,
+        title="是否使用参考图片",
+        description="是否使用参考图片作为输入。",
+    )
     api_key: str = Field(
         default="",
         title="API 鉴权密钥",
-        description="请求头 Authorization 所需的密钥。若在 NGC 环境内部运行可留空。",
+        description="请求头 Authorization 所需的密钥。",
     )
     cfg_scale: float = Field(
         default=5.0,
         title="CFG Scale",
-        description="图像与提示词的符合程度，范围 1.1~9。",
-        ge=1.1,
+        description="图像与提示词的符合程度，按照文档设置。若参数小于ABS_COMPARE，则在提交时将移除此参数。",
+        ge=-1.0,
         le=9.0,
     )
     steps: int = Field(
         default=50,
         title="生成步数",
-        description="图像生成的迭代次数，范围 1~100。",
-        ge=1,
-        le=100,
+        description="图像生成的迭代次数，按照文档设置。若参数小于ABS_COMPARE，则在提交时将移除此参数。",
+        ge=-1,
+        le=300,
     )
-    aspect_ratio: Literal["1:1", "4:3", "3:4", "16:9", "9:16"] = Field(
+    width: int = Field(
+        default=-1,
+        title="生成宽度",
+        description="生成图像的宽度。若参数为0，则在提交时将移除此参数。",
+        ge=-1,
+        le=1024,
+    )
+    height: int = Field(
+        default=-1,
+        title="生成高度",
+        description="生成图像的高度。若参数为0，则在提交时将移除此参数。",
+        ge=-1,
+        le=1024,
+    )
+    aspect_ratio: Literal[
+        "1:1", "1:2", "2:1", "2:3", "3:2", 
+        "3:4", "4:3", "3:5", "5:3", "5:11", 
+        "6:7", "7:6", "7:9", "9:16", "16:9", 
+        "7:13", "9:21", "11:5", "13:7", "21:9",
+        "match_input_image", "remove"
+    ] = Field(
         default="16:9",
         title="宽高比",
-        description="生成图像的宽高比。",
+        description="生成图像的宽高比。当设置为remove时，提交时将移除此参数。",
     )
     negative_prompt: str = Field(
         default="",
         title="负面提示词",
-        description="不希望出现在图像中的内容。",
+        description="不希望出现在图像中的内容。当为空时，提交时将移除此参数。",
         json_schema_extra=ExtraField(is_textarea=True).model_dump(),
     )
     timeout: int = Field(
@@ -109,21 +145,6 @@ class NvidiaDrawConfig(ConfigBase):
         description="API 请求的超时时间。",
         ge=1,
     )
-
-    @validator("cfg_scale")
-    def validate_cfg_scale(cls, v: float) -> float:
-        """确保 cfg_scale 在 1.1 到 9 之间。"""
-        if not (1.1 <= v <= 9):
-            raise ValueError("cfg_scale 必须在 1.1 到 9 之间")
-        return v
-
-    @validator("steps")
-    def validate_steps(cls, v: int) -> int:
-        """确保 steps 在 1 到 100 之间。"""
-        if not (1 <= v <= 100):
-            raise ValueError("steps 必须在 1 到 100 之间")
-        return v
-
 
 # ----------------------------------------------------------------------
 # 获取插件配置实例
@@ -161,12 +182,38 @@ async def nvidia_generate_image(prompt: str) -> Union[bytes, Dict[str, str]]:
     # 构建请求体
     payload: Dict[str, Any] = {
         "prompt": prompt,
-        "cfg_scale": config.cfg_scale,
-        "aspect_ratio": config.aspect_ratio,
         "seed": seed,
-        "steps": config.steps,
-        "negative_prompt": config.negative_prompt,
     }
+
+    # 条件性添加参数
+
+    # 当mode不为remove时，添加此参数
+    if config.mode != "remove":
+        payload["mode"] = config.mode
+
+    # 当cfg_scale大于ABS_COMPARE时，才添加此参数
+    if config.cfg_scale > ABS_COMPARE:
+        payload["cfg_scale"] = config.cfg_scale
+        
+    # 当steps大于ABS_COMPARE时，才添加此参数
+    if config.steps > ABS_COMPARE:
+        payload["steps"] = config.steps
+
+    # 当width大于0时，才添加此参数
+    if config.width > 0:
+        payload["width"] = config.width
+    
+    # 当height大于0时，才添加此参数
+    if config.height > 0:
+        payload["height"] = config.height
+
+    # 当aspect_ratio为remove或负数时不添加此参数，否则添加
+    if config.aspect_ratio != "remove":
+        payload["aspect_ratio"] = config.aspect_ratio
+
+    # 当negative_prompt非空时才添加此参数
+    if config.negative_prompt:
+        payload["negative_prompt"] = config.negative_prompt
 
     try:
         async with httpx.AsyncClient(timeout=config.timeout) as client:

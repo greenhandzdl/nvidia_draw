@@ -3,14 +3,18 @@
 ![License](https://img.shields.io/github/license/greenhandzdl/nvidia_sd_draw)
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 
-基于 NVIDIA AI API 的图像生成插件，使用 Stable Diffusion 3 Medium 模型生成高质量图像。
+基于 NVIDIA AI API 的图像生成插件，支持 Stable Diffusion 3 Medium 模型和不依赖于参考图的 Flux 模型，生成高质量图像。
 
 ## 功能介绍
 
-本插件提供基于 NVIDIA AI API 的图像生成功能，通过调用 Stability AI 的 Stable Diffusion 3 Medium 接口生成图像，并返回 Base64 编码的图片数据，供后续对话或多模态处理使用。
+本插件提供基于 NVIDIA AI API 的图像生成功能，通过调用 Stability AI 的 Stable Diffusion 3 Medium 接口或 Flux 接口生成图像，并返回 Base64 编码的图片数据，供后续对话或多模态处理使用。
+
+> [!WARNING]
+> 
+> ⚠️ **重要提醒**：在填写参数时请务必严格按照文档说明进行，否则可能会导致 422 错误而无法生成图片。
 
 主要特性：
-- 集成 NVIDIA Stable Diffusion 3 Medium 模型
+- 集成 NVIDIA Stable Diffusion 3 Medium 模型和 Flux 模型
 - 支持自定义提示词和图像比例
 - 可配置负向提示词、采样步数和CFG Scale参数
 - 支持模型组管理，可灵活切换API密钥

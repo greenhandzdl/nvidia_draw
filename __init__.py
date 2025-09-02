@@ -1,6 +1,9 @@
 """Nvidia Draw Plugin
 
-基于 NVIDIA AI API 的图像生成插件，使用 Stable Diffusion 3 Medium 模型生成高质量图像。
+基于 NVIDIA AI API 的图像生成插件，支持 Stable Diffusion 3 Medium 模型和不依赖于参考图的 Flux 模型，生成高质量图像。
+
+> [!WARNING]
+> ⚠️ 重要提醒：在填写参数时请务必严格按照文档说明进行，否则可能会导致 422 错误而无法生成图片。
 
 主要功能:
 - 图像生成：调用 NVIDIA API 生成图像
@@ -8,7 +11,7 @@
 - 模型组管理：支持多API密钥切换
 
 关键特性:
-- 集成 NVIDIA Stable Diffusion 3 Medium 多种模型
+- 集成 NVIDIA Stable Diffusion 3 Medium 和 Flux 模型
 - 支持自定义提示词和图像比例
 - 可配置负向提示词、采样步数和CFG Scale参数
 - 支持模型组管理，可灵活切换API密钥

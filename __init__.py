@@ -274,7 +274,7 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
             For example:``/app/uploads/sd_generate.jpeg``
             And you should use send_msg_file to send the image to the user.
         dict[str, str]: Error message if generation fails.
-
+                        If you get this result, you should tell users that the image generation failed, the reason for the failure, and then retry after a while.
     Examples:
         prompt = "a illustration style cute orange cat napping on a sunny windowsill, watercolor painting style"
 

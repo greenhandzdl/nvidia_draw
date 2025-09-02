@@ -81,9 +81,9 @@ class NvidiaDrawConfig(ConfigBase):
         description="要使用的生成模型。",
     )
     mode: str = Field(
-        default="remove",
+        default="",
         title="模式",
-        description="在提交参数(mode)时，若为remove，则将此参数移除。",
+        description="在提交参数(mode)时，若为空，则将此参数移除。",
     )
     is_reference_diagram: bool = Field(
         default=False,
@@ -198,7 +198,7 @@ async def nvidia_generate_image(prompt: str,refer_image: str = EG_IMAGE) -> Unio
     # 条件性添加参数
 
     # 当mode不为remove时，添加此参数
-    if config.mode != "remove":
+    if config.mode:
         payload["mode"] = config.mode
 
     # 当is_reference_diagram为True时，添加此参数

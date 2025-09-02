@@ -54,7 +54,7 @@ plugin = NekroPlugin(
     name="nvidia_draw",
     module_name="nvidia_draw",
     description="适合于Nvidia供应的绘图插件。",
-    version="0.3.0",
+    version="0.3.1",
     author="greenhandzdl",
     url="https://github.com/greenhandzdl/nvidia_sd_draw",
 )
@@ -88,7 +88,7 @@ class NvidiaDrawConfig(ConfigBase):
     is_reference_diagram: bool = Field(
         default=False,
         title="是否使用参考图片",
-        description="是否使用参考图片作为输入。",
+        description="是否使用参考图片作为输入。(不建议启用：Nvidia API不让外部上传参考图像，都会触发422)",
     )
     api_key: str = Field(
         default="",
@@ -313,6 +313,10 @@ async def nvidia_draw(_ctx: AgentCtx,
         send_msg_file(image_path)
 
         # Modify existing image and send to chat
+        image_path = nvidia_draw(prompt, "shared/refer_image.jpg")
+        send_msg_file(image_path)
+
+        # Or you can use the following method to send the image to the chat.(But I don't recommend this method)
         draw(prompt, "shared/refer_image.jpg", send_to_chat=_ck) # if adapter supports file, you can use this method to send the image to the chat. Otherwise, find another method to use the image.
 
         # Avoid Not Send Generated Image to chat
@@ -341,8 +345,10 @@ async def nvidia_draw(_ctx: AgentCtx,
         logger.debug(error_msg)
         return {"status": "error", "message": error_msg}
 
-    logger.debug("gen_result type: %s", type(gen_result))
     image_bytes: bytes = gen_result
+
+    logger.debug("gen_result type: %s", type(image_bytes))
+    logger.debug("Image generation successful, size: %d bytes", len(image_bytes))
 
     result_sandbox_file = await _ctx.fs.mixed_forward_file(image_bytes,"generate.jpeg")
 

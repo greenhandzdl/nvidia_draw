@@ -17,6 +17,25 @@
 - 自动生成随机种子确保图像多样性
 - 智能参数处理机制
 
+## 配置项说明
+
+插件支持以下配置项：
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| invoke_url_base | https://ai.api.nvidia.com/v1/genai/ | API 基础 URL，用于拼接模型名称 |
+| model | stabilityai/stable-diffusion-3-medium | 要使用的生成模型 |
+| mode | "" | 模式参数，若为空则在提交时移除 |
+| is_reference_diagram | false | 是否使用参考图片作为输入（不建议启用） |
+| api_key | "" | 请求头 Authorization 所需的密钥 |
+| cfg_scale | 5.0 | 图像与提示词的符合程度，小于0.1时将被移除 |
+| steps | 50 | 图像生成的迭代次数，小于0.1时将被移除 |
+| width | -1 | 生成图像的宽度，小于等于0时将被移除 |
+| height | -1 | 生成图像的高度，小于等于0时将被移除 |
+| aspect_ratio | 16:9 | 生成图像的宽高比，设置为"remove"时将被移除 |
+| negative_prompt | "" | 不希望出现在图像中的内容，为空时将被移除 |
+| timeout | 360 | API 请求的超时时间（秒） |
+
 ## 安装要求
 
 - Python 3.8 或更高版本

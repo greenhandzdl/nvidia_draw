@@ -13,22 +13,22 @@
 - 可配置负向提示词、采样步数和CFG Scale参数
 - 支持模型组管理，可灵活切换API密钥
 - 自动生成随机种子确保图像多样性
-
-插件包含的主要函数:
-- [nvidia_generate_image](./__init__.py#L112-L180): 生成图像并返回Base64编码数据
-- [nvidia_draw](./__init__.py#L184-L217): 主函数，整合图像生成和发送流程
-- [clean_up](./__init__.py#L222-L228): 清理插件使用的资源
 """
 import base64
+from importlib.util import source_hash
+from pathlib import Path
 
 import random
 from typing import Any, Dict, Literal, Optional, Union
+
+import aiofiles
+import magic
 
 import httpx
 from pydantic import Field
 
 from nekro_agent.core.core_utils import ConfigBase, ExtraField
-
+from nekro_agent.tools.path_convertor import convert_to_host_path
 from nekro_agent.api.schemas import AgentCtx
 from nekro_agent.core import logger
 from nekro_agent.api.plugin import (
@@ -40,11 +40,12 @@ from nekro_agent.api.plugin import (
 
 import os
 
+
 # ----------------------------------------------------------------------
 # Plugin constants
 # ----------------------------------------------------------------------
-ABS_COMPARE: float = 0.5  # 用于比较浮点数是否接近0的阈值
-
+ABS_COMPARE: float = 0.1  # 用于比较浮点数是否接近0的阈值
+EG_IMAGE: str = "data:image/png;example_id,0" # 默认参考图
 
 # ----------------------------------------------------------------------
 # Plugin instance
@@ -53,7 +54,7 @@ plugin = NekroPlugin(
     name="nvidia_draw",
     module_name="nvidia_draw",
     description="适合于Nvidia供应的绘图插件。",
-    version="0.2.1",
+    version="0.3.0",
     author="greenhandzdl",
     url="https://github.com/greenhandzdl/nvidia_sd_draw",
 )
@@ -81,7 +82,7 @@ class NvidiaDrawConfig(ConfigBase):
     )
     mode: str = Field(
         default="remove",
-        title="模型通道",
+        title="模式",
         description="在提交参数(mode)时，若为remove，则将此参数移除。",
     )
     is_reference_diagram: bool = Field(
@@ -155,11 +156,20 @@ config = plugin.get_config(NvidiaDrawConfig)
 # ----------------------------------------------------------------------
 # 辅助函数：图像生成
 # ----------------------------------------------------------------------
-async def nvidia_generate_image(prompt: str) -> Union[bytes, Dict[str, str]]:
+async def nvidia_generate_image(prompt: str,refer_image: str = EG_IMAGE) -> Union[bytes, Dict[str, str]]:
     """Generate an image using Nvidia's Stable Diffusion API.
 
     Args:
         prompt: The textual description of the desired image.
+            Suggested elements to include:
+            - Type of drawing (e.g., character setting, landscape, comics, etc.)
+            - What to draw details (characters, animals, objects, etc.)
+            - What they are doing or their state
+            - The scene or environment
+            - Overall mood or atmosphere
+            - Very detailed description or story (optional, recommend for comics)
+            - Art style (e.g., illustration, watercolor... any style you want)
+        refer_image (str): Optional source image path for image reference (useful for image style transfer or keep the elements of the original image)
 
     Returns:
         On success, a Base64‑encoded PNG image bytes.
@@ -190,6 +200,10 @@ async def nvidia_generate_image(prompt: str) -> Union[bytes, Dict[str, str]]:
     # 当mode不为remove时，添加此参数
     if config.mode != "remove":
         payload["mode"] = config.mode
+
+    # 当is_reference_diagram为True时，添加此参数
+    if config.is_reference_diagram:
+        payload["image"] = refer_image
 
     # 当cfg_scale大于ABS_COMPARE时，才添加此参数
     if config.cfg_scale > ABS_COMPARE:
@@ -263,11 +277,26 @@ async def nvidia_generate_image(prompt: str) -> Union[bytes, Dict[str, str]]:
     name="生成并发送图像",
     description="使用 Nvidia Stable Diffusion 生成图像并发送给用户。",
 )
-async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]:
+async def nvidia_draw(_ctx: AgentCtx,
+                      prompt: str,
+                      refer_image: str = "",
+                      send_to_chat: str = ""
+                      ) -> Union[str, dict[str, str]]:
     """Generate an image from a prompt and send it to the user.
 
     Args:
         prompt: The textual description of the desired image.
+            Suggested elements to include:
+            - Type of drawing (e.g., character setting, landscape, comics, etc.)
+            - What to draw details (characters, animals, objects, etc.)
+            - What they are doing or their state
+            - The scene or environment
+            - Overall mood or atmosphere
+            - Very detailed description or story (optional, recommend for comics)
+            - Art style (e.g., illustration, watercolor... any style you want)
+        refer_image (str): Optional source image path for image reference (useful for image style transfer or keep the elements of the original image)
+        send_to_chat (str): if send_to_chat is not empty, the image will be sent to the chat_key after generation
+
 
     Returns:
         str: Generated image path.(Notice: This method returns a path to the generated image, not the image itself.)
@@ -281,15 +310,31 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
         # You should use send_msg_file to send the image to the user.
         # Generate new image and send to chat
         image_path = nvidia_draw(prompt)
-        send_msg_file(_ck, image_path)
+        send_msg_file(image_path)
+
+        # Modify existing image and send to chat
+        draw(prompt, "shared/refer_image.jpg", send_to_chat=_ck) # if adapter supports file, you can use this method to send the image to the chat. Otherwise, find another method to use the image.
 
         # Avoid Not Send Generated Image to chat
         # Generate new image but **NOT** send to chat
         nvidia_draw(prompt)
 
     """
+
+    if refer_image:
+        async with aiofiles.open(
+            convert_to_host_path(Path(refer_image), chat_key=_ctx.chat_key, container_key=_ctx.container_key),
+            mode="rb",
+        ) as f:
+            image_data = await f.read()
+            mime_type = magic.from_buffer(image_data, mime=True)
+            image_data = base64.b64encode(image_data).decode("utf-8")
+        source_image_data :str = f"data:{mime_type};base64,{image_data}"
+    else:
+        source_image_data :str = EG_IMAGE
+
     # 生成图像
-    gen_result = await nvidia_generate_image(prompt)
+    gen_result = await nvidia_generate_image(prompt,source_image_data)
     if isinstance(gen_result, dict) and gen_result.get("status") == "error":
         error_msg: str = gen_result.get("message", "Unknown error")
         logger.error("Image generation error: %s", error_msg)
@@ -299,7 +344,11 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
     logger.debug("gen_result type: %s", type(gen_result))
     image_bytes: bytes = gen_result
 
-    result_sandbox_file = await _ctx.fs.mixed_forward_file(image_bytes,"sd_generate.jpeg")
+    result_sandbox_file = await _ctx.fs.mixed_forward_file(image_bytes,"generate.jpeg")
+
+    if send_to_chat:
+        await _ctx.ms.send_image(send_to_chat, result_sandbox_file, ctx=_ctx)
+
     return result_sandbox_file
 
 

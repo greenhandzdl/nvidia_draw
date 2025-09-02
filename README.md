@@ -9,11 +9,6 @@
 
 本插件提供基于 NVIDIA AI API 的图像生成功能，通过调用 Stability AI 的 Stable Diffusion 3 Medium 接口生成图像，并返回 Base64 编码的图片数据，供后续对话或多模态处理使用。
 
-插件包含的主要函数：
-- [nvidia_generate_image](./__init__.py#L137-L243): 生成图像并返回Base64编码数据
-- [nvidia_draw](./__init__.py#L247-L286): 主函数，整合图像生成和发送流程
-- [clean_up](./__init__.py#L291-L297): 清理插件使用的资源
-
 主要特性：
 - 集成 NVIDIA Stable Diffusion 3 Medium 模型
 - 支持自定义提示词和图像比例
@@ -38,7 +33,6 @@
    ```bash
    pip install -r requirements.txt
    ```
-
 
 ## 许可证
 

@@ -53,7 +53,7 @@ plugin = NekroPlugin(
     name="nvidia_draw",
     module_name="nvidia_draw",
     description="适合于Nvidia供应的绘图插件。",
-    version="0.2.0",
+    version="0.2.1",
     author="greenhandzdl",
     url="https://github.com/greenhandzdl/nvidia_sd_draw",
 )
@@ -123,9 +123,9 @@ class NvidiaDrawConfig(ConfigBase):
         le=1024,
     )
     aspect_ratio: Literal[
-        "1:1", "1:2", "2:1", "2:3", "3:2", 
-        "3:4", "4:3", "3:5", "5:3", "5:11", 
-        "6:7", "7:6", "7:9", "9:16", "16:9", 
+        "1:1", "1:2", "2:1", "2:3", "3:2",
+        "3:4", "4:3", "3:5", "5:3", "5:11",
+        "6:7", "7:6", "7:9", "9:16", "16:9",
         "7:13", "9:21", "11:5", "13:7", "21:9",
         "match_input_image", "remove"
     ] = Field(
@@ -194,7 +194,7 @@ async def nvidia_generate_image(prompt: str) -> Union[bytes, Dict[str, str]]:
     # 当cfg_scale大于ABS_COMPARE时，才添加此参数
     if config.cfg_scale > ABS_COMPARE:
         payload["cfg_scale"] = config.cfg_scale
-        
+
     # 当steps大于ABS_COMPARE时，才添加此参数
     if config.steps > ABS_COMPARE:
         payload["steps"] = config.steps
@@ -202,7 +202,7 @@ async def nvidia_generate_image(prompt: str) -> Union[bytes, Dict[str, str]]:
     # 当width大于0时，才添加此参数
     if config.width > 0:
         payload["width"] = config.width
-    
+
     # 当height大于0时，才添加此参数
     if config.height > 0:
         payload["height"] = config.height
@@ -221,7 +221,9 @@ async def nvidia_generate_image(prompt: str) -> Union[bytes, Dict[str, str]]:
             # 检查 HTTP 状态码
             response.raise_for_status()
             data = response.json()
-            image_str: Optional[str] = data.get("image")
+
+            image_str: Optional[str] = data.get("image") or data.get("artifacts")[0].get("base64")
+
             if not image_str:
                 logger.error("Image generation failed: missing 'image' field in response")
                 return {
@@ -291,6 +293,7 @@ async def nvidia_draw(_ctx: AgentCtx, prompt: str) -> Union[str, dict[str, str]]
     if isinstance(gen_result, dict) and gen_result.get("status") == "error":
         error_msg: str = gen_result.get("message", "Unknown error")
         logger.error("Image generation error: %s", error_msg)
+        logger.debug(error_msg)
         return {"status": "error", "message": error_msg}
 
     logger.debug("gen_result type: %s", type(gen_result))

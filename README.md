@@ -13,6 +13,13 @@
 > 
 > ⚠️ **重要提醒**：在填写参数时请务必严格按照文档说明进行，否则可能会导致 422 错误而无法生成图片。
 
+> [!TIP] 
+> 
+> **模型获取地址**:
+> 
+> 点击进入[Nvidia 模型地址](https://build.nvidia.com/models)，然后通过Filter筛选Image Generation，在这些模型选择。
+> 
+
 主要特性：
 - 集成 NVIDIA Stable Diffusion 3 Medium 模型和 Flux 模型
 - 支持自定义提示词和图像比例
